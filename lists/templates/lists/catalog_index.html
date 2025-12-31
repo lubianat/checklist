@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Catalogs{% endblock %}
+
+{% block content %}
+  <section class="space-y-10">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <div class="max-w-2xl space-y-4">
+        <p class="text-xs uppercase tracking-[0.35em] text-emerald-600">WikiChecklist</p>
+        <h2 class="text-4xl font-serif">Public catalogs</h2>
+        <p class="text-lg text-slate-600">
+          Share a catalog link so others can explore the same items and build personal lists.
+        </p>
+      </div>
+      <div class="flex items-center gap-4">
+        {% if user.is_authenticated %}
+          <a class="btn" href="{% url 'catalog_create' %}">Create new catalog</a>
+        {% else %}
+          <a class="btn" href="{% url 'login' %}">Login to create</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if user.is_authenticated and user_catalogs %}
+      <section class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="space-y-2">
+            <h3 class="text-2xl font-serif">Your Checklists</h3>
+            <p class="text-sm text-slate-600">Catalogs where you have started a checklist.</p>
+          </div>
+          <span class="text-xs uppercase tracking-[0.2em] text-slate-500">{{ user_catalogs|length }} total</span>
+        </div>
+        <ul class="grid gap-4 md:grid-cols-2 stagger">
+          {% for catalog in user_catalogs %}
+            <li class="card">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <a class="text-lg font-semibold text-slate-900" href="{% url 'catalog_detail' slug=catalog.slug %}">
+                  {{ catalog.name }}
+                </a>
+              </div>
+              <p class="text-xs uppercase tracking-[0.3em] text-emerald-700">{{ catalog.slug }}</p>
+              <p class="text-sm text-slate-500">by {{ catalog.created_by.username }}</p>
+              {% if catalog.description %}
+                <p class="text-sm text-slate-600">{{ catalog.description }}</p>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    <section class="space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="space-y-2">
+          <h3 class="text-2xl font-serif">{% if user.is_authenticated and user_catalogs %}Other Catalogs{% else %}All Catalogs{% endif %}</h3>
+          <p class="text-sm text-slate-600">Explore other public catalogs.</p>
+        </div>
+        <span class="text-xs uppercase tracking-[0.2em] text-slate-500">{{ other_catalogs|length }} total</span>
+      </div>
+      <ul class="grid gap-4 md:grid-cols-2 stagger">
+        {% for catalog in other_catalogs %}
+          <li class="card">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <a class="text-lg font-semibold text-slate-900" href="{% url 'catalog_detail' slug=catalog.slug %}">
+                {{ catalog.name }}
+              </a>
+            </div>
+            <p class="text-xs uppercase tracking-[0.3em] text-emerald-700">{{ catalog.slug }}</p>
+            <p class="text-sm text-slate-500">by {{ catalog.created_by.username }}</p>
+            {% if catalog.description %}
+              <p class="text-sm text-slate-600">{{ catalog.description }}</p>
+            {% endif %}
+          </li>
+        {% empty %}
+          <li class="card">
+            <p class="text-sm text-slate-600">No catalogs found.</p>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </section>
+{% endblock %}

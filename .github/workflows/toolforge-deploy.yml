@@ -1,0 +1,59 @@
+name: Toolforge Deploy
+on:
+  workflow_dispatch: ~
+  push:
+    branches:
+      - main
+    paths:
+      - "uwsgi.ini"
+      - "**/*.py"
+      - "requirements.txt"
+      - "templates/**"
+      - "lists/templates/**"
+      - "accounts/templates/**"
+      - "static/**"
+      - ".github/workflows/toolforge-deploy.yml"
+
+jobs:
+  deploy:
+    name: Deploy to Toolforge
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.11
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Configure SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+
+      - name: Run deployment commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          request_pty: true
+          script: |
+            set -xe
+            become checklist git -C ./www/python fetch origin
+            become checklist git -C ./www/python reset --hard origin/main
+            become checklist git -C ./www/python pull origin main
+            become checklist kubectl delete pods -n tool-checklist -l app.kubernetes.io/component=webservice-interactive
+            become checklist webservice --mem 512Mi python3.11 shell -- webservice-python-bootstrap
+            become checklist webservice --mem 512Mi python3.11 shell -- ./www/python/venv/bin/python ./www/python/manage.py migrate
+            become checklist webservice --mem 512Mi python3.11 shell -- ./www/python/venv/bin/python ./www/python/manage.py collectstatic --noinput
+            become checklist webservice python3.11 restart --mem 4Gi
+            become checklist webservice python3.11 status

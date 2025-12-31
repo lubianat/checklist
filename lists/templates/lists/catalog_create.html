@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Create Catalog{% endblock %}
+
+{% block content %}
+  <section class="space-y-10">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <div class="max-w-2xl space-y-4">
+        <p class="text-xs uppercase tracking-[0.35em] text-emerald-600">WikiChecklist</p>
+        <h2 class="text-4xl font-serif">Create a new catalog</h2>
+        <p class="text-lg text-slate-600">
+          Define a SPARQL query to populate your catalog.
+        </p>
+      </div>
+      <a class="btn-ghost" href="{% url 'list_index' %}">Back to catalogs</a>
+    </div>
+
+    <section class="card space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="space-y-2">
+          <h3 class="text-2xl font-serif">Catalog details</h3>
+          <p class="text-sm text-slate-600">
+            Pick a short alias and define the query that powers this catalog.
+          </p>
+        </div>
+        <span class="tag">Step 1</span>
+      </div>
+      {% if form.non_field_errors %}
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+      <form method="post" class="space-y-5">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="space-y-2">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+              <p class="text-xs text-slate-500">{{ field.help_text }}</p>
+            {% endif %}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+        <button type="submit" class="btn">Create catalog</button>
+      </form>
+    </section>
+
+    <section class="card space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="space-y-2">
+          <h3 class="text-2xl font-serif">Example queries</h3>
+          <p class="text-sm text-slate-600">Use one of these to prefill the form.</p>
+        </div>
+        <span class="tag">Starter kit</span>
+      </div>
+      <div class="space-y-4">
+        <div
+          data-example
+          data-example-name="Botanical gardens in Brazil"
+          data-example-description="All botanical gardens in Brazil."
+          class="space-y-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-4"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <strong class="text-lg text-slate-900">Botanical gardens in Brazil</strong>
+            <button type="button" class="btn-secondary">Use this example</button>
+          </div>
+          <p class="text-sm text-slate-600">
+            All botanical gardens in Brazil.
+          </p>
+          <pre>
+
+SELECT ?item ?itemLabel ?itemDescription ?image ?coord WHERE {
+  ?item wdt:P31 wd:Q167346;
+        wdt:P17 wd:Q155.
+  OPTIONAL { ?item wdt:P18 ?image. }
+  OPTIONAL { ?item wdt:P625 ?coord. }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],pt,pt-br,en,mul". }
+}
+LIMIT 1000</pre>
+        </div>
+
+        <div
+          data-example
+          data-example-name="SESC units"
+          data-example-description="All SESC units."
+          class="space-y-3 rounded-2xl border border-sky-200/70 bg-sky-50/60 p-4"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <strong class="text-lg text-slate-900">SESC units</strong>
+            <button type="button" class="btn-secondary">Use this example</button>
+          </div>
+          <p class="text-sm text-slate-600">
+            All SESC units.
+          </p>
+          <pre>
+SELECT ?item ?itemLabel ?itemDescription ?image ?coord WHERE {
+  ?item wdt:P31 wd:Q117307883.
+  OPTIONAL { ?item wdt:P18 ?image. }
+  OPTIONAL { ?item wdt:P625 ?coord. }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],pt,pt-br,en,mul". }
+}
+LIMIT 1000</pre>
+        </div>
+      </div>
+      <script>
+        (function () {
+          const nameInput = document.getElementById("id_name");
+          const descriptionInput = document.getElementById("id_description");
+          const queryInput = document.getElementById("id_query");
+          if (!nameInput || !descriptionInput || !queryInput) {
+            return;
+          }
+          const examples = document.querySelectorAll("[data-example]");
+          examples.forEach((example) => {
+            const button = example.querySelector("button");
+            const pre = example.querySelector("pre");
+            if (!button || !pre) {
+              return;
+            }
+            button.addEventListener("click", () => {
+              nameInput.value = example.dataset.exampleName || "";
+              descriptionInput.value = example.dataset.exampleDescription || "";
+              queryInput.value = pre.textContent.trim();
+              queryInput.focus();
+            });
+          });
+        })();
+      </script>
+    </section>
+  </section>
+{% endblock %}

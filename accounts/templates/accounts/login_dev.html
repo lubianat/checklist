@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Developer Login{% endblock %}
+
+{% block content %}
+  <section class="card mx-auto max-w-xl space-y-6">
+    <div class="space-y-3">
+      <p class="text-xs uppercase tracking-[0.35em] text-emerald-600">Developer access</p>
+      <h2 class="text-3xl font-serif">Use a personal OAuth token</h2>
+      <p class="text-sm text-slate-600">
+        Paste your access token to authenticate without the full OAuth flow.
+      </p>
+    </div>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <div class="space-y-2">
+        <label for="access_token">Access token</label>
+        <input
+          type="password"
+          id="access_token"
+          name="access_token"
+          placeholder="Access token"
+          required
+        >
+      </div>
+      {% if error %}
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          Access token is not valid: {{ error }}
+        </div>
+      {% endif %}
+      <div class="flex flex-wrap items-center gap-3">
+        <button type="submit" class="btn">Log in</button>
+        <a class="btn-ghost" href="{% url 'login' %}">Back to standard login</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

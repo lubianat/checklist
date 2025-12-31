@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}{{ catalog.name }}{% endblock %}
+
+{% block content %}
+<section class="space-y-10">
+  <section class="card space-y-6">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <div class="space-y-3">
+        <p class="text-xs uppercase tracking-[0.35em] text-emerald-600">Catalog</p>
+        <h2 class="text-4xl font-serif">{{ catalog.name }}</h2>
+        <p class="text-sm text-slate-500">Created by {{ catalog.created_by.username }}</p>
+        {% if catalog.description %}
+        <p class="text-base text-slate-600">{{ catalog.description }}</p>
+        {% endif %}
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        {% if user.is_authenticated %}
+        <span class="tag">{{ lists|length }} your list{% if lists|length != 1 %}s{% endif %}</span>
+        {% endif %}
+        <span class="tag bg-emerald-50 text-emerald-700">{{ catalog.slug }}</span>
+        {% if is_catalog_owner %}
+        <form method="post" action="{% url 'catalog_refresh' slug=catalog.slug %}">
+          {% csrf_token %}
+          <button type="submit" class="btn">Refresh catalog</button>
+        </form>
+        {% endif %}
+        <a class="btn-ghost" href="{% url 'list_index' %}">Back to catalogs</a>
+      </div>
+    </div>
+    <div class="space-y-3">
+      <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Catalog query</p>
+      <pre>{{ catalog.query }}</pre>
+    </div>
+    <div class="space-y-2">
+      <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Shareable link</p>
+      <input type="text" value="{{ request.build_absolute_uri }}" readonly>
+    </div>
+  </section>
+
+  {% if user.is_authenticated %}
+  <div class="space-y-8">
+    <section class="card space-y-6">
+      <div class="space-y-2">
+        <h3 class="text-2xl font-serif">Your Checklist</h3>
+        <p class="text-sm text-slate-600">
+          Track your progress for this catalog.
+        </p>
+      </div>
+
+      <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 stagger">
+        {% for row in place_rows %}
+        <li class="card flex flex-col gap-4 p-4">
+          <div class="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-100">
+            {% if row.place.image %}
+            <img src="{{ row.place.image }}" alt="{{ row.place.label|default:row.place.entity_id }}" loading="lazy"
+              class="h-full w-full object-cover transition-all duration-500 {% if not row.stamped %}opacity-60 grayscale filter{% endif %}">
+            {% else %}
+            <div class="flex h-full w-full items-center justify-center bg-slate-50 text-slate-300">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-12 w-12 opacity-50">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              </svg>
+            </div>
+            {% endif %}
+            
+            <div class="absolute bottom-3 right-3 z-10">
+               <form method="post"
+                  action="{% url 'stamp_toggle' list_id=visiting_list.id entity_id=row.place.entity_id %}"
+                  class="flex items-center" data-stamp-form>
+                  {% csrf_token %}
+                  <label class="relative inline-flex cursor-pointer items-center justify-center rounded-full bg-white p-2 shadow-sm transition hover:scale-110 focus-within:ring-2 focus-within:ring-emerald-400 focus-within:ring-offset-2">
+                    <input type="checkbox" name="checked" {% if row.stamped %}checked{% endif %}
+                      class="peer sr-only"
+                      data-stamp-checkbox>
+                    <div class="h-6 w-6 rounded-full border-2 border-slate-300 bg-white text-transparent transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-500 peer-checked:text-white">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-full w-full p-0.5">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <span class="sr-only">Stamp</span>
+                  </label>
+                </form>
+            </div>
+            {% if row.place.image %}
+            <a href="{{ row.place.image }}" target="_blank" rel="noreferrer" class="absolute bottom-3 left-3 z-10 rounded-md bg-black/30 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm transition hover:bg-black/50">
+              Commons
+            </a>
+            {% endif %}
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <div class="flex items-start justify-between gap-2">
+              <a class="font-semibold text-slate-900 hover:text-emerald-700 line-clamp-2"
+                href="https://www.wikidata.org/wiki/{{ row.place.entity_id }}" target="_blank" rel="noreferrer">
+                {{ row.place.label|default:row.place.entity_id }}
+              </a>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+              <a class="uppercase tracking-wider text-emerald-700 hover:underline"
+                href="https://www.wikidata.org/wiki/{{ row.place.entity_id }}" target="_blank" rel="noreferrer">
+                {{ row.place.entity_id }}
+              </a>
+            </div>
+
+            {% if row.place.description %}
+            <p class="text-sm text-slate-600 line-clamp-2">{{ row.place.description }}</p>
+            {% endif %}
+          </div>
+        </li>
+        {% empty %}
+        <li class="card col-span-full py-12 text-center">
+          <p class="text-slate-500">
+            No items yet in this catalog.
+          </p>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+  <script>
+    (function () {
+      const forms = document.querySelectorAll("[data-stamp-form]");
+      if (!forms.length) {
+        return;
+      }
+      const getCsrfToken = (form) => {
+        const input = form.querySelector('input[name="csrfmiddlewaretoken"]');
+        return input ? input.value : "";
+      };
+      forms.forEach((form) => {
+        const checkbox = form.querySelector("[data-stamp-checkbox]");
+        if (!checkbox) {
+          return;
+        }
+        
+        // Find the image element in the parent container
+        const card = form.closest('.card');
+        const image = card ? card.querySelector('img') : null;
+
+        const updateImageStyle = (checked) => {
+            if (!image) return;
+            if (checked) {
+                image.classList.remove('opacity-60', 'grayscale', 'filter');
+            } else {
+                image.classList.add('opacity-60', 'grayscale', 'filter');
+            }
+        };
+
+        let requestId = 0;
+        checkbox.addEventListener("change", async () => {
+          const desiredState = checkbox.checked;
+          const previous = !desiredState;
+          
+          // Optimistically update UI
+          updateImageStyle(desiredState);
+
+          requestId += 1;
+          const currentRequest = requestId;
+          const csrfToken = getCsrfToken(form);
+          const formData = new FormData(form);
+          if (!desiredState) {
+            formData.set("checked", "");
+          }
+          if (form._abortController) {
+            form._abortController.abort();
+          }
+          const controller = new AbortController();
+          form._abortController = controller;
+          checkbox.disabled = true;
+          try {
+            const headers = {
+              "X-Requested-With": "fetch",
+              "Accept": "application/json",
+            };
+            if (csrfToken) {
+              headers["X-CSRFToken"] = csrfToken;
+            }
+            const response = await fetch(form.action, {
+              method: "POST",
+              headers,
+              body: formData,
+              credentials: "same-origin",
+              signal: controller.signal,
+            });
+            if (response.redirected) {
+              window.location.assign(response.url);
+              return;
+            }
+            if (!response.ok) {
+              throw new Error(`Stamp update failed (${response.status})`);
+            }
+            const contentType = response.headers.get("content-type") || "";
+            if (!contentType.includes("application/json")) {
+              throw new Error("Unexpected response");
+            }
+            const payload = await response.json();
+            if (currentRequest !== requestId) {
+              return;
+            }
+            if (typeof payload.checked === "boolean") {
+              checkbox.checked = payload.checked;
+              updateImageStyle(payload.checked);
+            } else {
+              checkbox.checked = desiredState;
+              updateImageStyle(desiredState);
+            }
+          } catch (error) {
+            if (error.name !== "AbortError") {
+              checkbox.checked = previous;
+              updateImageStyle(previous);
+              console.error(error);
+            }
+          } finally {
+            if (currentRequest === requestId) {
+              checkbox.disabled = false;
+            }
+          }
+        });
+      });
+    })();
+  </script>
+  {% else %}
+  <section class="card flex flex-col items-start gap-4">
+    <h3 class="text-2xl font-serif">Create your personal list</h3>
+    <p class="text-sm text-slate-600">
+      Log in to create your own list based on this catalog.
+    </p>
+    <a class="btn" href="{% url 'login' %}">Login to create a list</a>
+  </section>
+  <section class="space-y-4 opacity-70 grayscale">
+    <div class="space-y-2">
+      <h3 class="text-2xl font-serif">Preview Items</h3>
+      <p class="text-sm text-slate-600">Login to track these items.</p>
+    </div>
+    <ul class="space-y-4">
+      {% for row in place_rows|slice:":3" %}
+      <li class="card flex flex-col gap-4 md:flex-row md:items-start">
+        {% if row.place.image %}
+        <div class="md:w-40">
+          <img src="{{ row.place.image }}" alt="{{ row.place.label|default:row.place.entity_id }}" loading="lazy"
+            class="h-28 w-full rounded-2xl object-cover md:h-32">
+        </div>
+        {% endif %}
+        <div class="flex flex-1 flex-col gap-3">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="space-y-2">
+              <span class="text-lg font-semibold text-slate-900">
+                {{ row.place.label|default:row.place.entity_id }}
+              </span>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs uppercase tracking-[0.25em] text-emerald-700">
+                  {{ row.place.entity_id }}
+                </span>
+                {% if row.place.description %}
+                <span class="text-sm text-slate-600">{{ row.place.description }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+      {% if place_rows|length > 3 %}
+      <li class="card text-center text-sm text-slate-500">
+        ... and {{ place_rows|length|add:"-3" }} more items.
+      </li>
+      {% endif %}
+    </ul>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

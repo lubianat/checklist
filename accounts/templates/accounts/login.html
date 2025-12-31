@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+  <section class="card mx-auto max-w-2xl space-y-6">
+    <div class="space-y-4">
+      <p class="text-xs uppercase tracking-[0.35em] text-emerald-600">WikiChecklist login</p>
+      <h2 class="text-3xl font-serif">Sign in with Wikimedia</h2>
+      <p class="text-base text-slate-600">
+        Authenticate to create lists and stamp items.
+      </p>
+    </div>
+
+    {% if error == "oauth_failed" %}
+      <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        Login failed. Please try again.
+      </div>
+    {% endif %}
+
+    <div class="flex flex-wrap gap-3">
+      {% if oauth_enabled %}
+        <a class="btn" href="{% url 'oauth_redirect' %}">Continue with Wikimedia</a>
+      {% else %}
+        <span class="btn cursor-not-allowed opacity-60">OAuth not configured</span>
+      {% endif %}
+      <a class="btn-secondary" href="{% url 'login_dev' %}">Developer access</a>
+    </div>
+  </section>
+{% endblock %}
