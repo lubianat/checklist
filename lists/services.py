@@ -57,10 +57,14 @@ def search_wikidata_entities(search_term, language="en", limit=10):
 
 
 def generate_sparql_query(item_type_id, location_id):
-    """Generate a SPARQL query for items of a given type in a given location."""
+    """Generate a SPARQL query for items of a given type in a given location.
+    
+    Uses P131 (located in administrative territorial entity) with * for any level,
+    which works for countries, states, cities, etc.
+    """
     query = f"""SELECT ?item ?itemLabel ?itemDescription ?image ?coord WHERE {{
   ?item wdt:P31 wd:{item_type_id};
-        wdt:P17 wd:{location_id}.
+        wdt:P131* wd:{location_id}.
   OPTIONAL {{ ?item wdt:P18 ?image. }}
   OPTIONAL {{ ?item wdt:P625 ?coord. }}
   SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],pt,pt-br,en,mul". }}

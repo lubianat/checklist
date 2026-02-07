@@ -242,6 +242,10 @@ LIMIT 1000</pre>
     <!-- Autocomplete script for simple mode -->
     <script>
       (function() {
+        // Configuration constants
+        const MIN_QUERY_LENGTH = 2;
+        const DEBOUNCE_DELAY_MS = 300;
+        
         // Autocomplete functionality
         function setupAutocomplete(inputId, valueId, suggestionsId) {
           const input = document.getElementById(inputId);
@@ -259,7 +263,7 @@ LIMIT 1000</pre>
             const query = this.value.trim();
             clearTimeout(debounceTimer);
             
-            if (query.length < 2) {
+            if (query.length < MIN_QUERY_LENGTH) {
               suggestionsContainer.innerHTML = '';
               suggestionsContainer.style.display = 'none';
               valueField.value = '';
@@ -304,7 +308,7 @@ LIMIT 1000</pre>
                   suggestionsContainer.innerHTML = '';
                   suggestionsContainer.style.display = 'none';
                 });
-            }, 300);
+            }, DEBOUNCE_DELAY_MS);
           });
           
           // Keyboard navigation

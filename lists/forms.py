@@ -15,7 +15,7 @@ class SimpleCatalogForm(forms.Form):
     )
     item_type_label = forms.CharField(
         max_length=200,
-        required=False,
+        required=True,
         label="",
         widget=forms.TextInput(attrs={
             "class": "autocomplete-input",
@@ -31,7 +31,7 @@ class SimpleCatalogForm(forms.Form):
     )
     location_label = forms.CharField(
         max_length=200,
-        required=False,
+        required=True,
         label="",
         widget=forms.TextInput(attrs={
             "class": "autocomplete-input",
