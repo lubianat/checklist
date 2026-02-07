@@ -154,7 +154,7 @@ class CatalogSortingTests(TestCase):
         place1 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q1")
         place2 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q2")
         place3 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q3")
-        
+
         # Stamp Q2 and Q3
         PassportStamp.objects.create(user=user, place=place2)
         PassportStamp.objects.create(user=user, place=place3)
@@ -185,7 +185,7 @@ class CatalogSortingTests(TestCase):
         place1 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q1")
         place2 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q2")
         place3 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q3")
-        
+
         # Stamp Q2
         PassportStamp.objects.create(user=user, place=place2)
 
