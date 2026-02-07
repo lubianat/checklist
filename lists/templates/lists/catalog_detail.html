@@ -62,7 +62,7 @@
 
       <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 stagger" id="catalog-items">
         {% for row in place_rows %}
-        <li class="card flex flex-col gap-4 p-4" data-item-search="{{ row.place.label|lower }} {{ row.place.description|lower }} {{ row.place.entity_id|lower }}">
+        <li class="card flex flex-col gap-4 p-4" data-item-search="{{ row.place.label|escape|lower }} {{ row.place.description|escape|lower }} {{ row.place.entity_id|escape|lower }}">
           <div class="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-100">
             {% if row.place.image %}
             <img src="{{ row.place.image }}" alt="{{ row.place.label|default:row.place.entity_id }}" loading="lazy"
@@ -255,7 +255,7 @@
 
         items.forEach(function(item) {
           const searchText = item.getAttribute('data-item-search');
-          if (query === '' || searchText.includes(query)) {
+          if (query === '' || (searchText && searchText.includes(query))) {
             item.style.display = '';
             visibleCount++;
           } else {
