@@ -10,4 +10,10 @@ urlpatterns = [
         views.stamp_toggle,
         name="stamp_toggle",
     ),
+    
+    path(
+        "api/wikidata-autocomplete/",
+        views.wikidata_autocomplete,
+        name="wikidata_autocomplete",
+    ),
 ]

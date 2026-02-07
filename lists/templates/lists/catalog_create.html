@@ -9,66 +9,173 @@
         <p class="text-xs uppercase tracking-[0.35em] text-emerald-600">WikiChecklist</p>
         <h2 class="text-4xl font-serif">Create a new catalog</h2>
         <p class="text-lg text-slate-600">
-          Define a SPARQL query to populate your catalog.
+          {% if mode == "simple" %}
+            Answer two simple questions to create your catalog.
+          {% else %}
+            Define a SPARQL query to populate your catalog.
+          {% endif %}
         </p>
       </div>
       <a class="btn-ghost" href="{% url 'list_index' %}">Back to catalogs</a>
     </div>
 
-    <section class="card space-y-6">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+    <!-- Mode toggle -->
+    <div class="card">
+      <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="space-y-2">
-          <h3 class="text-2xl font-serif">Catalog details</h3>
+          <h3 class="text-lg font-semibold">Creation mode</h3>
           <p class="text-sm text-slate-600">
-            Pick a short alias and define the query that powers this catalog.
+            Choose between simple or advanced catalog creation.
           </p>
         </div>
-        <span class="tag">Step 1</span>
-      </div>
-      {% if form.non_field_errors %}
-        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {{ form.non_field_errors }}
+        <div class="flex gap-2">
+          <a 
+            href="{% url 'catalog_create' %}?mode=simple"
+            class="{% if mode == 'simple' %}btn{% else %}btn-secondary{% endif %}"
+          >
+            Simple
+          </a>
+          <a 
+            href="{% url 'catalog_create' %}?mode=advanced"
+            class="{% if mode == 'advanced' %}btn{% else %}btn-secondary{% endif %}"
+          >
+            Advanced
+          </a>
         </div>
-      {% endif %}
-      <form method="post" class="space-y-5">
-        {% csrf_token %}
-        {% for field in form %}
-          <div class="space-y-2">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}
-              <p class="text-xs text-slate-500">{{ field.help_text }}</p>
-            {% endif %}
-            {{ field.errors }}
-          </div>
-        {% endfor %}
-        <button type="submit" class="btn">Create catalog</button>
-      </form>
-    </section>
+      </div>
+    </div>
 
-    <section class="card space-y-5">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="space-y-2">
-          <h3 class="text-2xl font-serif">Example queries</h3>
-          <p class="text-sm text-slate-600">Use one of these to prefill the form.</p>
-        </div>
-        <span class="tag">Starter kit</span>
-      </div>
-      <div class="space-y-4">
-        <div
-          data-example
-          data-example-name="Botanical gardens in Brazil"
-          data-example-description="All botanical gardens in Brazil."
-          class="space-y-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-4"
-        >
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <strong class="text-lg text-slate-900">Botanical gardens in Brazil</strong>
-            <button type="button" class="btn-secondary">Use this example</button>
+    {% if mode == "simple" %}
+      <!-- Simple mode form -->
+      <section class="card space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="space-y-2">
+            <h3 class="text-2xl font-serif">Catalog details</h3>
+            <p class="text-sm text-slate-600">
+              Answer two simple questions to generate your catalog.
+            </p>
           </div>
-          <p class="text-sm text-slate-600">
-            All botanical gardens in Brazil.
-          </p>
-          <pre>
+          <span class="tag">Simple mode</span>
+        </div>
+        {% if form.non_field_errors %}
+          <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+          
+          <!-- Item type autocomplete -->
+          <div class="space-y-2">
+            <label for="id_item_type_label" class="text-base font-semibold">What is the catalog about?</label>
+            <p class="text-sm text-slate-600">e.g., churches, parks, museums, botanical gardens</p>
+            <div class="autocomplete-wrapper">
+              {{ form.item_type_label }}
+              {{ form.item_type_id }}
+              <div id="item_type_suggestions" class="autocomplete-suggestions"></div>
+            </div>
+            {{ form.item_type_label.errors }}
+            {{ form.item_type_id.errors }}
+          </div>
+          
+          <!-- Location autocomplete -->
+          <div class="space-y-2">
+            <label for="id_location_label" class="text-base font-semibold">Where are these items found?</label>
+            <p class="text-sm text-slate-600">e.g., Brazil, Germany, Europe, São Paulo, Ouro Preto</p>
+            <div class="autocomplete-wrapper">
+              {{ form.location_label }}
+              {{ form.location_id }}
+              <div id="location_suggestions" class="autocomplete-suggestions"></div>
+            </div>
+            {{ form.location_label.errors }}
+            {{ form.location_id.errors }}
+          </div>
+
+          <!-- Optional fields -->
+          <details class="space-y-4">
+            <summary class="cursor-pointer text-sm font-medium text-emerald-700 hover:text-emerald-900">
+              Advanced options (optional)
+            </summary>
+            <div class="mt-4 space-y-4 pl-4">
+              <div class="space-y-2">
+                <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                {{ form.name }}
+                {% if form.name.help_text %}
+                  <p class="text-xs text-slate-500">{{ form.name.help_text }}</p>
+                {% endif %}
+                {{ form.name.errors }}
+              </div>
+              
+              <div class="space-y-2">
+                <label for="{{ form.slug.id_for_label }}">{{ form.slug.label }}</label>
+                {{ form.slug }}
+                {% if form.slug.help_text %}
+                  <p class="text-xs text-slate-500">{{ form.slug.help_text }}</p>
+                {% endif %}
+                {{ form.slug.errors }}
+              </div>
+            </div>
+          </details>
+          
+          <button type="submit" class="btn">Create catalog</button>
+        </form>
+      </section>
+    {% else %}
+      <!-- Advanced mode form -->
+      <section class="card space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="space-y-2">
+            <h3 class="text-2xl font-serif">Catalog details</h3>
+            <p class="text-sm text-slate-600">
+              Pick a short alias and define the query that powers this catalog.
+            </p>
+          </div>
+          <span class="tag">Advanced mode</span>
+        </div>
+        {% if form.non_field_errors %}
+          <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+        <form method="post" class="space-y-5">
+          {% csrf_token %}
+          {% for field in form %}
+            <div class="space-y-2">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}
+                <p class="text-xs text-slate-500">{{ field.help_text }}</p>
+              {% endif %}
+              {{ field.errors }}
+            </div>
+          {% endfor %}
+          <button type="submit" class="btn">Create catalog</button>
+        </form>
+      </section>
+
+      <section class="card space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="space-y-2">
+            <h3 class="text-2xl font-serif">Example queries</h3>
+            <p class="text-sm text-slate-600">Use one of these to prefill the form.</p>
+          </div>
+          <span class="tag">Starter kit</span>
+        </div>
+        <div class="space-y-4">
+          <div
+            data-example
+            data-example-name="Botanical gardens in Brazil"
+            data-example-description="All botanical gardens in Brazil."
+            class="space-y-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-4"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <strong class="text-lg text-slate-900">Botanical gardens in Brazil</strong>
+              <button type="button" class="btn-secondary">Use this example</button>
+            </div>
+            <p class="text-sm text-slate-600">
+              All botanical gardens in Brazil.
+            </p>
+            <pre>
 
 SELECT ?item ?itemLabel ?itemDescription ?image ?coord WHERE {
   ?item wdt:P31 wd:Q167346;
@@ -78,22 +185,22 @@ SELECT ?item ?itemLabel ?itemDescription ?image ?coord WHERE {
   SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],pt,pt-br,en,mul". }
 }
 LIMIT 1000</pre>
-        </div>
-
-        <div
-          data-example
-          data-example-name="SESC units"
-          data-example-description="All SESC units."
-          class="space-y-3 rounded-2xl border border-sky-200/70 bg-sky-50/60 p-4"
-        >
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <strong class="text-lg text-slate-900">SESC units</strong>
-            <button type="button" class="btn-secondary">Use this example</button>
           </div>
-          <p class="text-sm text-slate-600">
-            All SESC units.
-          </p>
-          <pre>
+
+          <div
+            data-example
+            data-example-name="SESC units"
+            data-example-description="All SESC units."
+            class="space-y-3 rounded-2xl border border-sky-200/70 bg-sky-50/60 p-4"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <strong class="text-lg text-slate-900">SESC units</strong>
+              <button type="button" class="btn-secondary">Use this example</button>
+            </div>
+            <p class="text-sm text-slate-600">
+              All SESC units.
+            </p>
+            <pre>
 SELECT ?item ?itemLabel ?itemDescription ?image ?coord WHERE {
   ?item wdt:P31 wd:Q117307883.
   OPTIONAL { ?item wdt:P18 ?image. }
@@ -101,32 +208,186 @@ SELECT ?item ?itemLabel ?itemDescription ?image ?coord WHERE {
   SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],pt,pt-br,en,mul". }
 }
 LIMIT 1000</pre>
+          </div>
         </div>
-      </div>
-      <script>
-        (function () {
-          const nameInput = document.getElementById("id_name");
-          const descriptionInput = document.getElementById("id_description");
-          const queryInput = document.getElementById("id_query");
-          if (!nameInput || !descriptionInput || !queryInput) {
-            return;
-          }
-          const examples = document.querySelectorAll("[data-example]");
-          examples.forEach((example) => {
-            const button = example.querySelector("button");
-            const pre = example.querySelector("pre");
-            if (!button || !pre) {
+        <script>
+          (function () {
+            const nameInput = document.getElementById("id_name");
+            const descriptionInput = document.getElementById("id_description");
+            const queryInput = document.getElementById("id_query");
+            if (!nameInput || !descriptionInput || !queryInput) {
               return;
             }
-            button.addEventListener("click", () => {
-              nameInput.value = example.dataset.exampleName || "";
-              descriptionInput.value = example.dataset.exampleDescription || "";
-              queryInput.value = pre.textContent.trim();
-              queryInput.focus();
+            const examples = document.querySelectorAll("[data-example]");
+            examples.forEach((example) => {
+              const button = example.querySelector("button");
+              const pre = example.querySelector("pre");
+              if (!button || !pre) {
+                return;
+              }
+              button.addEventListener("click", () => {
+                nameInput.value = example.dataset.exampleName || "";
+                descriptionInput.value = example.dataset.exampleDescription || "";
+                queryInput.value = pre.textContent.trim();
+                queryInput.focus();
+              });
             });
-          });
-        })();
-      </script>
-    </section>
+          })();
+        </script>
+      </section>
+    {% endif %}
   </section>
+
+  {% if mode == "simple" %}
+    <!-- Autocomplete script for simple mode -->
+    <script>
+      (function() {
+        // Autocomplete functionality
+        function setupAutocomplete(inputId, valueId, suggestionsId) {
+          const input = document.getElementById(inputId);
+          const valueField = document.getElementById(valueId);
+          const suggestionsContainer = document.getElementById(suggestionsId);
+          
+          if (!input || !valueField || !suggestionsContainer) {
+            return;
+          }
+          
+          let debounceTimer;
+          let selectedIndex = -1;
+          
+          input.addEventListener('input', function() {
+            const query = this.value.trim();
+            clearTimeout(debounceTimer);
+            
+            if (query.length < 2) {
+              suggestionsContainer.innerHTML = '';
+              suggestionsContainer.style.display = 'none';
+              valueField.value = '';
+              return;
+            }
+            
+            debounceTimer = setTimeout(() => {
+              fetch(`/lists/api/wikidata-autocomplete/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                  suggestionsContainer.innerHTML = '';
+                  selectedIndex = -1;
+                  
+                  if (data.results && data.results.length > 0) {
+                    data.results.forEach((item, index) => {
+                      const div = document.createElement('div');
+                      div.className = 'autocomplete-item';
+                      div.innerHTML = `
+                        <div class="font-medium text-slate-900">${item.label || item.id}</div>
+                        ${item.description ? `<div class="text-xs text-slate-600">${item.description}</div>` : ''}
+                      `;
+                      div.dataset.id = item.id;
+                      div.dataset.label = item.label || item.id;
+                      div.dataset.index = index;
+                      
+                      div.addEventListener('click', function() {
+                        input.value = this.dataset.label;
+                        valueField.value = this.dataset.id;
+                        suggestionsContainer.innerHTML = '';
+                        suggestionsContainer.style.display = 'none';
+                      });
+                      
+                      suggestionsContainer.appendChild(div);
+                    });
+                    suggestionsContainer.style.display = 'block';
+                  } else {
+                    suggestionsContainer.style.display = 'none';
+                  }
+                })
+                .catch(error => {
+                  console.error('Autocomplete error:', error);
+                  suggestionsContainer.innerHTML = '';
+                  suggestionsContainer.style.display = 'none';
+                });
+            }, 300);
+          });
+          
+          // Keyboard navigation
+          input.addEventListener('keydown', function(e) {
+            const items = suggestionsContainer.querySelectorAll('.autocomplete-item');
+            
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+              updateSelection(items);
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              selectedIndex = Math.max(selectedIndex - 1, -1);
+              updateSelection(items);
+            } else if (e.key === 'Enter' && selectedIndex >= 0) {
+              e.preventDefault();
+              items[selectedIndex].click();
+            } else if (e.key === 'Escape') {
+              suggestionsContainer.innerHTML = '';
+              suggestionsContainer.style.display = 'none';
+            }
+          });
+          
+          function updateSelection(items) {
+            items.forEach((item, index) => {
+              if (index === selectedIndex) {
+                item.classList.add('selected');
+              } else {
+                item.classList.remove('selected');
+              }
+            });
+          }
+          
+          // Close suggestions when clicking outside
+          document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+              suggestionsContainer.innerHTML = '';
+              suggestionsContainer.style.display = 'none';
+            }
+          });
+        }
+        
+        // Initialize autocomplete for both fields
+        setupAutocomplete('id_item_type_label', 'id_item_type_id', 'item_type_suggestions');
+        setupAutocomplete('id_location_label', 'id_location_id', 'location_suggestions');
+      })();
+    </script>
+    
+    <style>
+      .autocomplete-wrapper {
+        position: relative;
+      }
+      
+      .autocomplete-suggestions {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        margin-top: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+      }
+      
+      .autocomplete-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      
+      .autocomplete-item:last-child {
+        border-bottom: none;
+      }
+      
+      .autocomplete-item:hover,
+      .autocomplete-item.selected {
+        background-color: #f0fdf4;
+      }
+    </style>
+  {% endif %}
 {% endblock %}
