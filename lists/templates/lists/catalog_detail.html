@@ -41,11 +41,26 @@
   {% if user.is_authenticated %}
   <div class="space-y-8">
     <section class="card space-y-6">
-      <div class="space-y-2">
-        <h3 class="text-2xl font-serif">Your Checklist</h3>
-        <p class="text-sm text-slate-600">
-          Track your progress for this catalog.
-        </p>
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="space-y-2">
+          <h3 class="text-2xl font-serif">Your Checklist</h3>
+          <p class="text-sm text-slate-600">
+            Track your progress for this catalog.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="?sort=stamped_first" class="btn-ghost text-sm {% if sort_by == 'stamped_first' %}bg-emerald-100 text-emerald-700{% endif %}">
+            Stamped First
+          </a>
+          <a href="?sort=unstamped_first" class="btn-ghost text-sm {% if sort_by == 'unstamped_first' %}bg-emerald-100 text-emerald-700{% endif %}">
+            Unstamped First
+          </a>
+          {% if sort_by %}
+          <a href="?" class="btn-ghost text-sm">
+            Default Order
+          </a>
+          {% endif %}
+        </div>
       </div>
 
       <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 stagger">
