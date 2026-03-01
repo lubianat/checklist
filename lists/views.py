@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -16,7 +17,15 @@ logger = logging.getLogger(__name__)
 
 
 def list_index(request):
-    catalogs = Catalog.objects.select_related("created_by").order_by("-created_at")
+    search_query = request.GET.get("q", "").strip()
+    catalogs = Catalog.objects.select_related("created_by")
+    if search_query:
+        catalogs = catalogs.filter(
+            Q(name__icontains=search_query)
+            | Q(slug__icontains=search_query)
+            | Q(description__icontains=search_query)
+        )
+    catalogs = catalogs.order_by("-created_at")
     
     user_catalogs = []
     other_catalogs = []
@@ -39,6 +48,8 @@ def list_index(request):
         {
             "user_catalogs": user_catalogs,
             "other_catalogs": other_catalogs,
+            "search_query": search_query,
+            "matched_catalogs_count": len(user_catalogs) + len(other_catalogs),
         },
     )
 

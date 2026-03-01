@@ -256,3 +256,72 @@ class CatalogSearchTests(TestCase):
         self.assertIn('q1', content.lower())
         self.assertIn('q2', content.lower())
         self.assertIn('q3', content.lower())
+
+
+class CatalogIndexSearchTests(TestCase):
+    def test_anonymous_search_filters_catalogs(self):
+        owner = User.objects.create_user(username="owner")
+        Catalog.objects.create(
+            name="Botanical Gardens in Brazil",
+            slug="botanical-gardens-brazil",
+            description="Public gardens catalog.",
+            query="SELECT ?item WHERE {}",
+            created_by=owner,
+        )
+        Catalog.objects.create(
+            name="Planetariums in Argentina",
+            slug="planetariums-argentina",
+            description="Public planetariums catalog.",
+            query="SELECT ?item WHERE {}",
+            created_by=owner,
+        )
+
+        response = self.client.get("/", {"q": "garden"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [catalog.slug for catalog in response.context["other_catalogs"]],
+            ["botanical-gardens-brazil"],
+        )
+        self.assertEqual(response.context["matched_catalogs_count"], 1)
+        self.assertEqual(response.context["search_query"], "garden")
+
+    def test_authenticated_search_preserves_user_vs_other_sections(self):
+        owner = User.objects.create_user(username="owner")
+        user = User.objects.create_user(username="viewer")
+        in_user_list = Catalog.objects.create(
+            name="Museums in Chile",
+            slug="museums-chile",
+            description="Museum catalog.",
+            query="SELECT ?item WHERE {}",
+            created_by=owner,
+        )
+        matching_other = Catalog.objects.create(
+            name="Museums in Uruguay",
+            slug="museums-uruguay",
+            description="Museum catalog.",
+            query="SELECT ?item WHERE {}",
+            created_by=owner,
+        )
+        Catalog.objects.create(
+            name="Parks in Peru",
+            slug="parks-peru",
+            description="Park catalog.",
+            query="SELECT ?item WHERE {}",
+            created_by=owner,
+        )
+        VisitingList.objects.create(catalog=in_user_list, created_by=user)
+
+        self.client.force_login(user)
+        response = self.client.get("/", {"q": "museums"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [catalog.slug for catalog in response.context["user_catalogs"]],
+            ["museums-chile"],
+        )
+        self.assertEqual(
+            [catalog.slug for catalog in response.context["other_catalogs"]],
+            ["museums-uruguay"],
+        )
+        self.assertEqual(response.context["matched_catalogs_count"], 2)

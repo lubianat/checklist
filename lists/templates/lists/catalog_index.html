@@ -21,6 +21,27 @@
       </div>
     </div>
 
+    <section class="card space-y-4">
+      <form method="get" class="space-y-3 sm:space-y-0 sm:flex sm:items-end sm:gap-3">
+        <div class="flex-1 space-y-2">
+          <label for="catalog-search" class="text-xs uppercase tracking-[0.3em] text-slate-500">Search catalogs</label>
+          <input
+            id="catalog-search"
+            type="search"
+            name="q"
+            value="{{ search_query }}"
+            placeholder="Search by name, slug, or description">
+        </div>
+        <button type="submit" class="btn">Search</button>
+        {% if search_query %}
+          <a class="btn-secondary" href="{% url 'list_index' %}">Clear</a>
+        {% endif %}
+      </form>
+      <p class="text-xs text-slate-500">
+        Showing {{ matched_catalogs_count }} catalog{% if matched_catalogs_count != 1 %}s{% endif %}.
+      </p>
+    </section>
+
     {% if user.is_authenticated and user_catalogs %}
       <section class="space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">

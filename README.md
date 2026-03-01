@@ -78,8 +78,8 @@ still uses the OAuth profile endpoint configured by `OAUTH_AUTHORIZATION_SERVER`
 
 ```bash
 webservice python3.11 shell -- webservice-python-bootstrap
-webservice python3.11 shell -- ./www/python/venv/bin/python ./www/python/checklist.toolforge.org/manage.py migrate
-webservice python3.11 shell -- ./www/python/venv/bin/python ./www/python/checklist.toolforge.org/manage.py collectstatic --noinput
+webservice python3.11 shell -- ./www/python/venv/bin/python ./www/python/checklist/manage.py migrate
+webservice python3.11 shell -- ./www/python/venv/bin/python ./www/python/checklist/manage.py collectstatic --noinput
 ```
 
 - Start the webservice:
@@ -139,6 +139,7 @@ LIMIT 1000
 ## Roadmap to v1.0
 
 - [ ] Search (for catalogs and in personal lists)
+- [ ] Improve views for unlogged users
 - [ ] Basic stats (e.g., percentage complete)
 - [ ] Map display of catalogs
 - [ ] Review mobile support
