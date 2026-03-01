@@ -48,9 +48,21 @@
         </p>
       </div>
 
-      <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 stagger">
+      <div class="space-y-2">
+        <label for="catalog-search" class="text-xs uppercase tracking-[0.3em] text-slate-500">Search items</label>
+        <input 
+          type="text" 
+          id="catalog-search" 
+          placeholder="Search by name, description, or ID..."
+          class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <p class="text-xs text-slate-500">
+          <span id="search-results-count">{{ place_rows|length }}</span> of {{ place_rows|length }} items
+        </p>
+      </div>
+
+      <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 stagger" id="catalog-items">
         {% for row in place_rows %}
-        <li class="card flex flex-col gap-4 p-4">
+        <li class="card flex flex-col gap-4 p-4" data-item-search="{{ row.place.label|escape|lower }} {{ row.place.description|escape|lower }} {{ row.place.entity_id|escape|lower }}">
           <div class="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-100">
             {% if row.place.image %}
             <img src="{{ row.place.image }}" alt="{{ row.place.label|default:row.place.entity_id }}" loading="lazy"
@@ -115,6 +127,11 @@
           </p>
         </li>
         {% endfor %}
+        <li class="card col-span-full py-12 text-center" id="no-search-results" style="display: none;">
+          <p class="text-slate-500">
+            No items match your search.
+          </p>
+        </li>
       </ul>
     </section>
   </div>
@@ -217,6 +234,40 @@
             }
           }
         });
+      });
+    })();
+
+    // Search functionality
+    (function() {
+      const searchInput = document.getElementById('catalog-search');
+      const resultsCount = document.getElementById('search-results-count');
+      const items = document.querySelectorAll('[data-item-search]');
+      const noResults = document.getElementById('no-search-results');
+      const totalItems = items.length;
+
+      if (!searchInput || !items.length) {
+        return;
+      }
+
+      searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        let visibleCount = 0;
+
+        items.forEach(function(item) {
+          const searchText = item.getAttribute('data-item-search');
+          if (query === '' || (searchText && searchText.includes(query))) {
+            item.style.display = '';
+            visibleCount++;
+          } else {
+            item.style.display = 'none';
+          }
+        });
+
+        resultsCount.textContent = visibleCount;
+        
+        if (noResults) {
+          noResults.style.display = visibleCount === 0 && query !== '' ? '' : 'none';
+        }
       });
     })();
   </script>
