@@ -202,3 +202,57 @@ class CatalogSortingTests(TestCase):
         # Stamped item (Q2) should come last
         self.assertEqual(place_rows[2]["place"].entity_id, "Q2")
         self.assertTrue(place_rows[2]["stamped"])
+        
+class CatalogSearchTests(TestCase):
+    def test_catalog_detail_includes_search_attributes(self):
+        """Test that catalog detail page includes search data attributes for filtering."""
+        user = User.objects.create_user(username="searcher")
+        catalog = Catalog.objects.create(
+            name="Search Catalog",
+            slug="search-catalog",
+            description="Test catalog for search",
+            query="SELECT ?item WHERE {}",
+            created_by=user,
+        )
+        
+        # Create test places with different attributes
+        VisitingPlace.objects.create(
+            catalog=catalog,
+            entity_id="Q1",
+            label="Botanical Garden",
+            description="A beautiful garden with plants",
+        )
+        VisitingPlace.objects.create(
+            catalog=catalog,
+            entity_id="Q2",
+            label="Museum",
+            description="Art and history museum",
+        )
+        VisitingPlace.objects.create(
+            catalog=catalog,
+            entity_id="Q3",
+            label="Park",
+            description="",
+        )
+        
+        self.client.force_login(user)
+        response = self.client.get(f"/catalogs/{catalog.slug}/")
+        
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        
+        # Check that search input is present
+        self.assertIn('id="catalog-search"', content)
+        
+        # Check that items have search data attributes
+        self.assertIn('data-item-search=', content)
+        
+        # Check that search result counter is present
+        self.assertIn('id="search-results-count"', content)
+        
+        # Verify search attributes include label, description, and entity_id (lowercased)
+        self.assertIn('botanical garden', content.lower())
+        self.assertIn('museum', content.lower())
+        self.assertIn('q1', content.lower())
+        self.assertIn('q2', content.lower())
+        self.assertIn('q3', content.lower())
