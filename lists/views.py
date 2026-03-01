@@ -95,6 +95,13 @@ def catalog_detail(request, slug):
         for place in places
     ]
 
+    # Handle sorting by stamped status
+    sort_by = request.GET.get('sort', '')
+    if sort_by == 'stamped_first':
+        place_rows.sort(key=lambda x: (not x["stamped"], x["place"].entity_id))
+    elif sort_by == 'unstamped_first':
+        place_rows.sort(key=lambda x: (x["stamped"], x["place"].entity_id))
+
     return render(
         request,
         "lists/catalog_detail.html",
@@ -104,6 +111,7 @@ def catalog_detail(request, slug):
             "place_rows": place_rows,
             "is_catalog_owner": request.user.is_authenticated
             and catalog.created_by_id == request.user.id,
+            "sort_by": sort_by,
         },
     )
 

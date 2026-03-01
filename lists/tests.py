@@ -119,6 +119,90 @@ class StampToggleTests(TestCase):
         self.assertTrue(PassportStamp.objects.filter(user=user, place=place).exists())
 
 
+class CatalogSortingTests(TestCase):
+    def test_default_sort_order_by_entity_id(self):
+        user = User.objects.create_user(username="sorter")
+        catalog = Catalog.objects.create(
+            name="Sort Catalog",
+            slug="sort-catalog",
+            description="",
+            query="SELECT ?item WHERE {}",
+            created_by=user,
+        )
+        place1 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q3")
+        place2 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q1")
+        place3 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q2")
+
+        self.client.force_login(user)
+        response = self.client.get(f"/catalogs/{catalog.slug}/")
+
+        self.assertEqual(response.status_code, 200)
+        place_rows = response.context["place_rows"]
+        self.assertEqual(place_rows[0]["place"].entity_id, "Q1")
+        self.assertEqual(place_rows[1]["place"].entity_id, "Q2")
+        self.assertEqual(place_rows[2]["place"].entity_id, "Q3")
+
+    def test_sort_stamped_first(self):
+        user = User.objects.create_user(username="sorter")
+        catalog = Catalog.objects.create(
+            name="Sort Catalog",
+            slug="sort-catalog",
+            description="",
+            query="SELECT ?item WHERE {}",
+            created_by=user,
+        )
+        place1 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q1")
+        place2 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q2")
+        place3 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q3")
+
+        # Stamp Q2 and Q3
+        PassportStamp.objects.create(user=user, place=place2)
+        PassportStamp.objects.create(user=user, place=place3)
+
+        self.client.force_login(user)
+        response = self.client.get(f"/catalogs/{catalog.slug}/?sort=stamped_first")
+
+        self.assertEqual(response.status_code, 200)
+        place_rows = response.context["place_rows"]
+        # Stamped items (Q2, Q3) should come first, sorted by entity_id
+        self.assertEqual(place_rows[0]["place"].entity_id, "Q2")
+        self.assertTrue(place_rows[0]["stamped"])
+        self.assertEqual(place_rows[1]["place"].entity_id, "Q3")
+        self.assertTrue(place_rows[1]["stamped"])
+        # Unstamped item (Q1) should come last
+        self.assertEqual(place_rows[2]["place"].entity_id, "Q1")
+        self.assertFalse(place_rows[2]["stamped"])
+
+    def test_sort_unstamped_first(self):
+        user = User.objects.create_user(username="sorter")
+        catalog = Catalog.objects.create(
+            name="Sort Catalog",
+            slug="sort-catalog",
+            description="",
+            query="SELECT ?item WHERE {}",
+            created_by=user,
+        )
+        place1 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q1")
+        place2 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q2")
+        place3 = VisitingPlace.objects.create(catalog=catalog, entity_id="Q3")
+
+        # Stamp Q2
+        PassportStamp.objects.create(user=user, place=place2)
+
+        self.client.force_login(user)
+        response = self.client.get(f"/catalogs/{catalog.slug}/?sort=unstamped_first")
+
+        self.assertEqual(response.status_code, 200)
+        place_rows = response.context["place_rows"]
+        # Unstamped items (Q1, Q3) should come first, sorted by entity_id
+        self.assertEqual(place_rows[0]["place"].entity_id, "Q1")
+        self.assertFalse(place_rows[0]["stamped"])
+        self.assertEqual(place_rows[1]["place"].entity_id, "Q3")
+        self.assertFalse(place_rows[1]["stamped"])
+        # Stamped item (Q2) should come last
+        self.assertEqual(place_rows[2]["place"].entity_id, "Q2")
+        self.assertTrue(place_rows[2]["stamped"])
+        
 class CatalogSearchTests(TestCase):
     def test_catalog_detail_includes_search_attributes(self):
         """Test that catalog detail page includes search data attributes for filtering."""
