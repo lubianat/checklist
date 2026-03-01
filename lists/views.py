@@ -8,9 +8,9 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from .forms import CatalogForm
+from .forms import CatalogForm, SimpleCatalogForm
 from .models import Catalog, PassportStamp, VisitingList, VisitingPlace
-from .services import WikidataQueryError, refresh_catalog_places
+from .services import WikidataQueryError, refresh_catalog_places, search_wikidata_entities
 
 logger = logging.getLogger(__name__)
 
@@ -45,27 +45,66 @@ def list_index(request):
 
 @login_required
 def catalog_create(request):
-    form = CatalogForm()
-    if request.method == "POST":
-        form = CatalogForm(request.POST)
-        if form.is_valid():
-            catalog = form.save(commit=False)
-            catalog.created_by = request.user
-            try:
-                with transaction.atomic():
-                    catalog.save()
-                    created_count = refresh_catalog_places(catalog)
-            except WikidataQueryError as exc:
-                form.add_error("query", f"Query failed: {exc}")
-                logger.warning("Catalog query failed for %s: %s", catalog.name, exc)
-            except Exception:
-                logger.exception("Catalog creation failed for %s", catalog.name)
-                form.add_error(None, "Something went wrong while creating the catalog.")
-            else:
-                messages.success(request, f"Catalog created with {created_count} items.")
-                return redirect("catalog_detail", slug=catalog.slug)
+    # Check if user wants simple or advanced mode
+    mode = request.GET.get("mode", "simple")
+    use_simple_mode = mode == "simple"
     
-    return render(request, "lists/catalog_create.html", {"form": form})
+    if use_simple_mode:
+        form = SimpleCatalogForm()
+        if request.method == "POST":
+            form = SimpleCatalogForm(request.POST)
+            if form.is_valid():
+                # Create catalog from simple form data
+                catalog = Catalog(
+                    name=form.get_catalog_name(),
+                    slug=form.cleaned_data["slug"],
+                    description=form.get_catalog_description(),
+                    query=form.get_sparql_query(),
+                    created_by=request.user,
+                )
+                try:
+                    with transaction.atomic():
+                        catalog.save()
+                        created_count = refresh_catalog_places(catalog)
+                except WikidataQueryError as exc:
+                    form.add_error(None, f"Query failed: {exc}")
+                    logger.warning("Catalog query failed for %s: %s", catalog.name, exc)
+                except Exception:
+                    logger.exception("Catalog creation failed for %s", catalog.name)
+                    form.add_error(None, "Something went wrong while creating the catalog.")
+                else:
+                    messages.success(request, f"Catalog created with {created_count} items.")
+                    return redirect("catalog_detail", slug=catalog.slug)
+    else:
+        # Advanced mode with raw SPARQL
+        form = CatalogForm()
+        if request.method == "POST":
+            form = CatalogForm(request.POST)
+            if form.is_valid():
+                catalog = form.save(commit=False)
+                catalog.created_by = request.user
+                try:
+                    with transaction.atomic():
+                        catalog.save()
+                        created_count = refresh_catalog_places(catalog)
+                except WikidataQueryError as exc:
+                    form.add_error("query", f"Query failed: {exc}")
+                    logger.warning("Catalog query failed for %s: %s", catalog.name, exc)
+                except Exception:
+                    logger.exception("Catalog creation failed for %s", catalog.name)
+                    form.add_error(None, "Something went wrong while creating the catalog.")
+                else:
+                    messages.success(request, f"Catalog created with {created_count} items.")
+                    return redirect("catalog_detail", slug=catalog.slug)
+    
+    return render(
+        request, 
+        "lists/catalog_create.html", 
+        {
+            "form": form,
+            "mode": mode,
+        }
+    )
 
 
 def catalog_detail(request, slug):
@@ -197,3 +236,13 @@ def stamp_toggle(request, list_id, entity_id):
         return JsonResponse({"checked": current_checked})
 
     return redirect("catalog_detail", slug=catalog.slug)
+
+
+def wikidata_autocomplete(request):
+    """API endpoint for Wikidata entity autocomplete."""
+    search_term = request.GET.get("q", "").strip()
+    if not search_term:
+        return JsonResponse({"results": []})
+    
+    results = search_wikidata_entities(search_term)
+    return JsonResponse({"results": results})

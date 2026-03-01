@@ -26,6 +26,53 @@ MAX_RESULTS = 1000
 logger = logging.getLogger(__name__)
 
 
+def search_wikidata_entities(search_term, language="en", limit=10):
+    """Search for Wikidata entities using the Wikidata search API."""
+    url = "https://www.wikidata.org/w/api.php"
+    params = {
+        "action": "wbsearchentities",
+        "search": search_term,
+        "language": language,
+        "limit": limit,
+        "format": "json",
+    }
+    headers = {
+        "User-Agent": settings.WIKIMEDIA_USER_AGENT,
+    }
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        results = []
+        for item in data.get("search", []):
+            results.append({
+                "id": item.get("id", ""),
+                "label": item.get("label", ""),
+                "description": item.get("description", ""),
+            })
+        return results
+    except Exception as exc:
+        logger.warning("Wikidata entity search failed: %s", exc)
+        return []
+
+
+def generate_sparql_query(item_type_id, location_id):
+    """Generate a SPARQL query for items of a given type in a given location.
+    
+    Uses P131 (located in administrative territorial entity) with * for any level,
+    which works for countries, states, cities, etc.
+    """
+    query = f"""SELECT ?item ?itemLabel ?itemDescription ?image ?coord WHERE {{
+  ?item wdt:P31 wd:{item_type_id};
+        wdt:P131* wd:{location_id}.
+  OPTIONAL {{ ?item wdt:P18 ?image. }}
+  OPTIONAL {{ ?item wdt:P625 ?coord. }}
+  SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],pt,pt-br,en,mul". }}
+}}
+LIMIT 1000"""
+    return query
+
+
 def _extract_entity_id(value):
     if "/" in value:
         return value.rsplit("/", 1)[-1]
